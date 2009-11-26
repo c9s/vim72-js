@@ -988,13 +988,14 @@ var_redir_start(name, append)
     int		err;
     typval_T	tv;
 
-    /* Make sure a valid variable name is specified */
+    /* Catch a bad name early. */
     if (!eval_isnamec1(*name))
     {
 	EMSG(_(e_invarg));
 	return FAIL;
     }
 
+    /* Make a copy of the name, it is used in redir_lval until redir ends. */
     redir_varname = vim_strsave(name);
     if (redir_varname == NULL)
 	return FAIL;
@@ -1019,6 +1020,7 @@ var_redir_start(name, append)
 	    EMSG(_(e_trailing));
 	else
 	    EMSG(_(e_invarg));
+	redir_endp = NULL;  /* don't store a value, only cleanup */
 	var_redir_stop();
 	return FAIL;
     }
@@ -1037,6 +1039,7 @@ var_redir_start(name, append)
     did_emsg |= save_emsg;
     if (err)
     {
+	redir_endp = NULL;  /* don't store a value, only cleanup */
 	var_redir_stop();
 	return FAIL;
     }
@@ -1085,6 +1088,7 @@ var_redir_str(value, value_len)
 
 /*
  * Stop redirecting command output to a variable.
+ * Frees the allocated memory.
  */
     void
 var_redir_stop()
@@ -1093,14 +1097,18 @@ var_redir_stop()
 
     if (redir_lval != NULL)
     {
-	/* Append the trailing NUL. */
-	ga_append(&redir_ga, NUL);
+	/* If there was no error: assign the text to the variable. */
+	if (redir_endp != NULL)
+	{
+	    ga_append(&redir_ga, NUL);  /* Append the trailing NUL. */
+	    tv.v_type = VAR_STRING;
+	    tv.vval.v_string = redir_ga.ga_data;
+	    set_var_lval(redir_lval, redir_endp, &tv, FALSE, (char_u *)".");
+	}
 
-	/* Assign the text to the variable. */
-	tv.v_type = VAR_STRING;
-	tv.vval.v_string = redir_ga.ga_data;
-	set_var_lval(redir_lval, redir_endp, &tv, FALSE, (char_u *)".");
-	vim_free(tv.vval.v_string);
+	/* free the collected output */
+	vim_free(redir_ga.ga_data);
+	redir_ga.ga_data = NULL;
 
 	clear_lval(redir_lval);
 	vim_free(redir_lval);
@@ -9920,6 +9928,7 @@ filter_map(argvars, rettv, map)
     int		todo;
     char_u	*ermsg = map ? (char_u *)"map()" : (char_u *)"filter()";
     int		save_did_emsg;
+    int		index = 0;
 
     if (argvars[0].v_type == VAR_LIST)
     {
@@ -9953,9 +9962,9 @@ filter_map(argvars, rettv, map)
 	save_did_emsg = did_emsg;
 	did_emsg = FALSE;
 
+	prepare_vimvar(VV_KEY, &save_key);
 	if (argvars[0].v_type == VAR_DICT)
 	{
-	    prepare_vimvar(VV_KEY, &save_key);
 	    vimvars[VV_KEY].vv_type = VAR_STRING;
 
 	    ht = &d->dv_hashtab;
@@ -9979,24 +9988,27 @@ filter_map(argvars, rettv, map)
 		}
 	    }
 	    hash_unlock(ht);
-
-	    restore_vimvar(VV_KEY, &save_key);
 	}
 	else
 	{
+	    vimvars[VV_KEY].vv_type = VAR_NUMBER;
+
 	    for (li = l->lv_first; li != NULL; li = nli)
 	    {
 		if (tv_check_lock(li->li_tv.v_lock, ermsg))
 		    break;
 		nli = li->li_next;
+		vimvars[VV_KEY].vv_nr = index;
 		if (filter_map_one(&li->li_tv, expr, map, &rem) == FAIL
 								  || did_emsg)
 		    break;
 		if (!map && rem)
 		    listitem_remove(l, li);
+		++index;
 	    }
 	}
 
+	restore_vimvar(VV_KEY, &save_key);
 	restore_vimvar(VV_VAL, &save_val);
 
 	did_emsg |= save_did_emsg;
@@ -11727,6 +11739,9 @@ f_has(argvars, rettv)
 #endif
 #ifdef FEAT_SNIFF
 	"sniff",
+#endif
+#ifdef STARTUPTIME
+	"startuptime",
 #endif
 #ifdef FEAT_STL_OPT
 	"statusline",
@@ -18098,6 +18113,31 @@ get_vim_var_list(idx)
     int		idx;
 {
     return vimvars[idx].vv_list;
+}
+
+/*
+ * Set v:char to character "c".
+ */
+    void
+set_vim_var_char(c)
+    int c;
+{
+#ifdef FEAT_MBYTE
+    char_u	buf[MB_MAXBYTES];
+#else
+    char_u	buf[2];
+#endif
+
+#ifdef FEAT_MBYTE
+    if (has_mbyte)
+	buf[(*mb_char2bytes)(c, buf)] = NUL;
+    else
+#endif
+    {
+	buf[0] = c;
+	buf[1] = NUL;
+    }
+    set_vim_var_string(VV_CHAR, buf, -1);
 }
 
 /*

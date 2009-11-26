@@ -422,8 +422,9 @@ shift_block(oap, amount)
 #ifdef FEAT_MBYTE
 	    if (has_mbyte)
 		bd.textstart += (*mb_ptr2len)(bd.textstart);
+	    else
 #endif
-	    ++bd.textstart;
+		++bd.textstart;
 	}
 	for ( ; vim_iswhite(*bd.textstart); )
 	{
@@ -2020,6 +2021,7 @@ op_replace(oap, c)
 	bd.is_MAX = (curwin->w_curswant == MAXCOL);
 	for ( ; curwin->w_cursor.lnum <= oap->end.lnum; ++curwin->w_cursor.lnum)
 	{
+	    curwin->w_cursor.col = 0;  /* make sure cursor position is valid */
 	    block_prep(oap, &bd, curwin->w_cursor.lnum, TRUE);
 	    if (bd.textlen == 0 && (!virtual_op || bd.is_MAX))
 		continue;	    /* nothing to replace */
@@ -2035,6 +2037,7 @@ op_replace(oap, c)
 	    {
 		pos_T vpos;
 
+		vpos.lnum = curwin->w_cursor.lnum;
 		getvpos(&vpos, oap->start_vcol);
 		bd.startspaces += vpos.coladd;
 		n = bd.startspaces;
@@ -2693,11 +2696,8 @@ op_change(oap)
 			 * initial coladd offset as part of "startspaces" */
 			if (bd.is_short)
 			{
-			    linenr_T lnum = curwin->w_cursor.lnum;
-
-			    curwin->w_cursor.lnum = linenr;
+			    vpos.lnum = linenr;
 			    (void)getvpos(&vpos, oap->start_vcol);
-			    curwin->w_cursor.lnum = lnum;
 			}
 			else
 			    vpos.coladd = 0;
@@ -3991,6 +3991,14 @@ ex_display(eap)
 	}
 	else
 	    yb = &(y_regs[i]);
+
+#ifdef FEAT_EVAL
+	if (name == MB_TOLOWER(redir_reg)
+		|| (redir_reg == '"' && yb == y_previous))
+	    continue;	    /* do not list register being written to, the
+			     * pointer can be freed */
+#endif
+
 	if (yb->y_array != NULL)
 	{
 	    msg_putchar('\n');
@@ -4473,11 +4481,6 @@ fex_format(lnum, count, c)
     int		use_sandbox = was_set_insecurely((char_u *)"formatexpr",
 								   OPT_LOCAL);
     int		r;
-#ifdef FEAT_MBYTE
-    char_u	buf[MB_MAXBYTES];
-#else
-    char_u	buf[2];
-#endif
 
     /*
      * Set v:lnum to the first line number and v:count to the number of lines.
@@ -4485,17 +4488,7 @@ fex_format(lnum, count, c)
      */
     set_vim_var_nr(VV_LNUM, lnum);
     set_vim_var_nr(VV_COUNT, count);
-
-#ifdef FEAT_MBYTE
-    if (has_mbyte)
-	buf[(*mb_char2bytes)(c, buf)] = NUL;
-    else
-#endif
-    {
-	buf[0] = c;
-	buf[1] = NUL;
-    }
-    set_vim_var_string(VV_CHAR, buf, -1);
+    set_vim_var_char(c);
 
     /*
      * Evaluate the function.
@@ -5604,7 +5597,10 @@ x11_export_final_selection()
 	    vc.vc_type = CONV_NONE;
 	    if (convert_setup(&vc, p_enc, (char_u *)"latin1") == OK)
 	    {
-		conv_str = string_convert(&vc, str, (int*)&len);
+	        int intlen = len;
+
+		conv_str = string_convert(&vc, str, &intlen);
+		len = intlen;
 		if (conv_str != NULL)
 		{
 		    vim_free(str);
@@ -6105,7 +6101,7 @@ str_to_reg(y_ptr, type, str, len, blocklen)
     long	maxlen;
 #endif
 
-    if (y_ptr->y_array == NULL)		/* NULL means emtpy register */
+    if (y_ptr->y_array == NULL)		/* NULL means empty register */
 	y_ptr->y_size = 0;
 
     /*

@@ -187,9 +187,14 @@ buf_init_chartab(buf, global)
 		if (VIM_ISDIGIT(*p))
 		    c2 = getdigits(&p);
 		else
+#ifdef FEAT_MBYTE
+		     if (has_mbyte)
+		    c2 = mb_ptr2char_adv(&p);
+		else
+#endif
 		    c2 = *p++;
 	    }
-	    if (c <= 0 || (c2 < c && c2 != -1) || c2 >= 256
+	    if (c <= 0 || c >= 256 || (c2 < c && c2 != -1) || c2 >= 256
 						 || !(*p == NUL || *p == ','))
 		return FAIL;
 
@@ -1218,6 +1223,8 @@ in_win_border(wp, vcol)
     if ((int)vcol == width1 - 1)
 	return TRUE;
     width2 = width1 + win_col_off2(wp);
+    if (width2 <= 0)
+	return FALSE;
     return ((vcol - width1) % width2 == width2 - 1);
 }
 #endif /* FEAT_MBYTE */

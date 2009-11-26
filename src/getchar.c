@@ -22,7 +22,7 @@
  * These buffers are used for storing:
  * - stuffed characters: A command that is translated into another command.
  * - redo characters: will redo the last change.
- * - recorded chracters: for the "q" command.
+ * - recorded characters: for the "q" command.
  *
  * The bytes are stored like in the typeahead buffer:
  * - K_SPECIAL introduces a special key (two more bytes follow).  A literal
@@ -129,7 +129,7 @@ static void	map_free __ARGS((mapblock_T **));
 static void	validate_maphash __ARGS((void));
 static void	showmap __ARGS((mapblock_T *mp, int local));
 #ifdef FEAT_EVAL
-static char_u	*eval_map_expr __ARGS((char_u *str));
+static char_u	*eval_map_expr __ARGS((char_u *str, int c));
 #endif
 
 /*
@@ -1283,7 +1283,7 @@ free_typebuf()
 	EMSG2(_(e_intern2), "Free typebuf 1");
     else
 	vim_free(typebuf.tb_buf);
-    if (typebuf.tb_buf == noremapbuf_init)
+    if (typebuf.tb_noremap == noremapbuf_init)
 	EMSG2(_(e_intern2), "Free typebuf 2");
     else
 	vim_free(typebuf.tb_noremap);
@@ -1516,7 +1516,7 @@ updatescript(c)
  * wanted.
  * This translates escaped K_SPECIAL and CSI bytes to a K_SPECIAL or CSI byte.
  * Collects the bytes of a multibyte character into the whole character.
- * Returns the modifers in the global "mod_mask".
+ * Returns the modifiers in the global "mod_mask".
  */
     int
 vgetc()
@@ -2446,7 +2446,7 @@ vgetorpeek(advance)
 			    if (tabuf.typebuf_valid)
 			    {
 				vgetc_busy = 0;
-				s = eval_map_expr(mp->m_str);
+				s = eval_map_expr(mp->m_str, NUL);
 				vgetc_busy = save_vgetc_busy;
 			    }
 			    else
@@ -3320,7 +3320,7 @@ do_map(maptype, arg, mode, abbrev)
 			    retval = 1;
 			    goto theend;
 			}
-	    /* An abbrevation cannot contain white space. */
+	    /* An abbreviation cannot contain white space. */
 	    for (n = 0; n < len; ++n)
 		if (vim_iswhite(keys[n]))
 		{
@@ -4272,7 +4272,7 @@ check_abbr(c, ptr, col, mincol)
 
     /*
      * Check for word before the cursor: If it ends in a keyword char all
-     * chars before it must be al keyword chars or non-keyword chars, but not
+     * chars before it must be keyword chars or non-keyword chars, but not
      * white space. If it ends in a non-keyword char we accept any characters
      * before it except white space.
      */
@@ -4367,9 +4367,9 @@ check_abbr(c, ptr, col, mincol)
 	     * abbreviation, but is not inserted into the input stream.
 	     */
 	    j = 0;
-					/* special key code, split up */
 	    if (c != Ctrl_RSB)
 	    {
+					/* special key code, split up */
 		if (IS_SPECIAL(c) || c == K_SPECIAL)
 		{
 		    tb[j++] = K_SPECIAL;
@@ -4398,7 +4398,7 @@ check_abbr(c, ptr, col, mincol)
 	    }
 #ifdef FEAT_EVAL
 	    if (mp->m_expr)
-		s = eval_map_expr(mp->m_str);
+		s = eval_map_expr(mp->m_str, c);
 	    else
 #endif
 		s = mp->m_str;
@@ -4434,8 +4434,9 @@ check_abbr(c, ptr, col, mincol)
  * special characters.
  */
     static char_u *
-eval_map_expr(str)
+eval_map_expr(str, c)
     char_u	*str;
+    int		c;	    /* NUL or typed character for abbreviation */
 {
     char_u	*res;
     char_u	*p;
@@ -4452,6 +4453,7 @@ eval_map_expr(str)
 #ifdef FEAT_EX_EXTRA
     ++ex_normal_lock;
 #endif
+    set_vim_var_char(c);  /* set v:char to the typed character */
     save_cursor = curwin->w_cursor;
     p = eval_to_string(str, NULL, FALSE);
     --textlock;
