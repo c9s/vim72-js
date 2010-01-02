@@ -1174,6 +1174,7 @@
  * +perl		Perl interface: "--enable-perlinterp"
  * +python		Python interface: "--enable-pythoninterp"
  * +tcl			TCL interface: "--enable-tclinterp"
+ * +js                  JavaScript interface: "--enable-jsinterp"
  * +sniff		Sniff interface: "--enable-sniff"
  * +sun_workshop	Sun Workshop integration
  * +netbeans_intg	Netbeans integration
@@ -1277,3 +1278,5 @@
 	    || defined(FEAT_BIG)
 # define FEAT_AUTOCHDIR
 #endif
+
+#define FEAT_JS

@@ -245,6 +245,10 @@ static void	ex_popup __ARGS((exarg_T *eap));
 # define ex_mzscheme		ex_script_ni
 # define ex_mzfile		ex_ni
 #endif
+#ifndef FEAT_JS
+# define ex_js		        ex_script_ni
+# define ex_jsfile		ex_ni
+#endif
 #ifndef FEAT_PERL
 # define ex_perl		ex_script_ni
 # define ex_perldo		ex_ni
