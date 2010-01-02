@@ -840,6 +840,7 @@ ex_messages(eap)
     msg_hist_off = FALSE;
 }
 
+
 #if defined(FEAT_CON_DIALOG) || defined(FIND_REPLACE_DIALOG) || defined(PROTO)
 /*
  * Call this after prompting the user.  This will avoid a hit-return message

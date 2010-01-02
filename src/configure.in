@@ -633,6 +633,27 @@ AC_SUBST(PERL_PRO)
 AC_SUBST(PERL_CFLAGS)
 AC_SUBST(PERL_LIBS)
 
+
+AC_MSG_CHECKING(--enable-jsinterp argument)
+AC_ARG_ENABLE(jsinterp,
+	[  --enable-jsinterp   Include Javascript interpreter.], ,
+	[enable_jsinterp="no"])
+AC_MSG_RESULT($enable_jsinterp)
+if test "$enable_jsinterp" = "yes"; then
+    AC_DEFINE(FEAT_JS)
+    JS_SRC=if_js.c
+    JS_PRO=if_js.pro
+    JS_OBJ=objects/if_js.o
+    JS_LIBS="-L/usr/local/lib -lmozjs  -ldl -lm  -lm -ldl "
+    JS_CFLAGS="-I/usr/local/include/js"
+fi
+AC_SUBST(JS_LIBS)
+AC_SUBST(JS_CFLAGS)
+AC_SUBST(JS_SRC)
+AC_SUBST(JS_OBJ)
+AC_SUBST(JS_PRO)
+
+
 AC_MSG_CHECKING(--enable-pythoninterp argument)
 AC_ARG_ENABLE(pythoninterp,
 	[  --enable-pythoninterp   Include Python interpreter.], ,
