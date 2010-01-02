@@ -6,12 +6,35 @@
  * See https://developer.mozilla.org/en/JavaScript_C_Engine_Embedder's_Guide
  * for more details.
  *
+ * naming rule:
+ *  struct name          : js_[A-Z][a-z]+
+ *  js export functions  : js_[a-z]+
+ *  non-export functions : [a-z]+
  */
+
 #include "vim.h"
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
 #include "jsapi.h"
+
+#define js_runtime_memory 8L
+
+/* JS global variables. */
+typedef struct jsEnv
+{
+    JSRuntime *rt;
+    JSContext *cx;
+    JSObject  *global;
+} jsEnv;
+
+typedef struct
+{
+    JSObject	    *jso;
+    buf_T	    *buf;
+} jsBufferObject;
+
+jsEnv *js_env = NULL;
 
 /* The class of the global object. */
 static JSClass global_class = {
@@ -28,15 +51,11 @@ static JSClass global_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-/* JS global variables. */
-JSRuntime *rt;
-JSContext *cx;
-JSObject *global;
 
 
 /* The javascript error reporter callback. */
     void
-reportError(cx, message, report)
+report_error(cx, message, report)
     JSContext		*cx;
     const char		*message;
     JSErrorReport	*report;
@@ -85,7 +104,7 @@ js_system(cx, obj, argc, argv, rval)
 
 
     JSBool
-js_get_buffer_count( cx , obj , argc ,argv , rval )
+js_buf_cnt( cx , obj , argc ,argv , rval )
     JSContext	*cx;
     JSObject	*obj; 
     uintN	argc;
@@ -101,12 +120,16 @@ js_get_buffer_count( cx , obj , argc ,argv , rval )
     return JS_NewNumberValue(cx, n , rval);
 }
 
-
-    void
-buffer_new( buf_T * buf )
+    static jsBufferObject *
+js_new_buffer_object( buf_T * buf )
 {
-
+    jsBufferObject *self = (jsBufferObject *) alloc( sizeof( jsBufferObject ) );
+    vim_memset(self, 0, sizeof( jsBufferObject ));
+    self->jso = JS_NewObject( js_env->cx, NULL, NULL, NULL);
+    self->buf = buf;
+    return self;
 }
+
 
     JSBool
 js_get_buffer_by_num( cx , obj , argc ,argv , rval )
@@ -119,12 +142,20 @@ js_get_buffer_by_num( cx , obj , argc ,argv , rval )
 
     int	    fnum;
     buf_T   *buf;
-    for (buf = firstbuf; buf; buf = buf->b_next)
-	if (buf->b_fnum == fnum)
-	    buffer_new(buf);
-
+    for (buf = firstbuf; buf; buf = buf->b_next) {
+	if (buf->b_fnum == fnum) {
+	    jsBufferObject *obj = js_new_buffer_object(buf);
+	    if ( obj->jso == NULL) {
+		return JS_FALSE;
+	    }
+	    else {
+		*rval = OBJECT_TO_JSVAL( (JSObject *) obj );
+	    }
+	}
+    }
     return JS_TRUE;
 }
+
 
 
     JSBool
@@ -160,9 +191,10 @@ static JSFunctionSpec js_global_functions[] = {
     JS_FS("system", js_system, 1, 0, 0),
 
     /* vim function interface here  */
-    JS_FS("alert", js_vim_message, 1, 0, 0),
-    JS_FS("message", js_vim_message, 1, 0, 0),
-    JS_FS("buf_cnt", js_get_buffer_count, 0, 0, 0),
+    JS_FS("alert"   , js_vim_message       , 1 , 0 , 0)  , 
+    JS_FS("message" , js_vim_message       , 1 , 0 , 0)  , 
+    JS_FS("buf_cnt" , js_buf_cnt           , 0 , 0 , 0)  , 
+    JS_FS("buf_nr"  , js_get_buffer_by_num , 0 , 0 , 0) , 
     JS_FS_END
 };
 
@@ -180,46 +212,52 @@ ex_jsfile(eap)
 {
     char *filename = (char *) eap->arg;
     int compileOnly = 0;
-    JSScript *script = JS_CompileFile(cx, global, filename);
+    JSScript *script = JS_CompileFile( js_env->cx, js_env->global, filename);
 
     if (script) {
 	if (!compileOnly)
-	    (void) JS_ExecuteScript(cx, global, script, NULL);
-	JS_DestroyScript(cx, script);
+	    (void) JS_ExecuteScript( js_env->cx, js_env->global, script, NULL);
+	JS_DestroyScript( js_env->cx, script);
     }
 }
 
-
-
-void
+    void
 vim_js_init(arg)
     char *arg;
 {
+    js_env = (jsEnv *) alloc(sizeof(jsEnv));
+    vim_memset( js_env , 0 , sizeof(jsEnv) );
+    
+    //js_env = (jsEnv *) JS_malloc( sizeof(jsEnv) );
+    //JS_malloc
+
+    js_env->rt = JS_NewRuntime( js_runtime_memory * 1024L * 1024L);
+
+
     /* 3 things to init runtime , context and global object */
-    rt = JS_NewRuntime(8L * 1024L * 1024L);
-    if (rt == NULL)
+    if ( js_env->rt == NULL)
 	return;
 
-    cx = JS_NewContext(rt, 8192);
-    if (cx == NULL)
+    js_env->cx = JS_NewContext( js_env->rt, 8192);
+    if (js_env->cx == NULL)
 	return;
-    JS_SetOptions(cx, JSOPTION_VAROBJFIX);
-    JS_SetVersion(cx, JSVERSION_LATEST);
-    JS_SetErrorReporter(cx, reportError);
+    JS_SetOptions(js_env->cx, JSOPTION_VAROBJFIX);
+    JS_SetVersion(js_env->cx, JSVERSION_LATEST);
+    JS_SetErrorReporter( js_env->cx, report_error);
 
-    global = JS_NewObject(cx, &global_class, NULL, NULL);
+    js_env->global = JS_NewObject( js_env->cx, &global_class, NULL, NULL);
 
-    if (global == NULL)
+    if ( js_env->global == NULL)
 	return;
 
     /*
      * Populate the global object with the standard globals, like Object
      * and Array.
      */
-    if (!JS_InitStandardClasses(cx, global))
+    if (!JS_InitStandardClasses( js_env->cx, js_env->global))
 	return;
 
-    if (!JS_DefineFunctions(cx, global, js_global_functions))
+    if (!JS_DefineFunctions( js_env->cx, js_env->global, js_global_functions))
 	return;
 }
 
@@ -228,8 +266,8 @@ js_end()
 {
 
     /* Cleanup. */
-    JS_DestroyContext(cx);
-    JS_DestroyRuntime(rt);
+    JS_DestroyContext( js_env->cx);
+    JS_DestroyRuntime( js_env->rt);
     JS_ShutDown();
 
 }
