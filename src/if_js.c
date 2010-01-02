@@ -101,6 +101,24 @@ js_get_buffer_count( cx , obj , argc ,argv , rval )
     return JS_NewNumberValue(cx, n , rval);
 }
 
+    JSBool
+js_get_buffer_count( cx , obj , argc ,argv , rval )
+    JSContext	*cx;
+    JSObject	*obj; 
+    uintN	argc;
+    jsval	*argv; 
+    jsval	*rval;
+{
+
+    int	    fnum;
+    buf_T   *buf;
+    for (buf = firstbuf; buf; buf = buf->b_next)
+	if (buf->b_fnum == fnum)
+	    return buffer_new(buf);
+
+
+}
+
 
     JSBool
 js_vim_message( cx , obj , argc , argv , rval )
