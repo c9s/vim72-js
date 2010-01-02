@@ -37,9 +37,9 @@ JSObject *global;
 /* The javascript error reporter callback. */
     void
 reportError(cx, message, report)
-    JSContext 		*cx;
-    const char 		*message;
-    JSErrorReport 	*report;
+    JSContext		*cx;
+    const char		*message;
+    JSErrorReport	*report;
 {
     char *error_msg;
     char *p;
@@ -101,8 +101,15 @@ js_get_buffer_count( cx , obj , argc ,argv , rval )
     return JS_NewNumberValue(cx, n , rval);
 }
 
+
+    void
+buffer_new( buf_T * buf )
+{
+
+}
+
     JSBool
-js_get_buffer_count( cx , obj , argc ,argv , rval )
+js_get_buffer_by_num( cx , obj , argc ,argv , rval )
     JSContext	*cx;
     JSObject	*obj; 
     uintN	argc;
@@ -114,9 +121,9 @@ js_get_buffer_count( cx , obj , argc ,argv , rval )
     buf_T   *buf;
     for (buf = firstbuf; buf; buf = buf->b_next)
 	if (buf->b_fnum == fnum)
-	    return buffer_new(buf);
+	    buffer_new(buf);
 
-
+    return JS_TRUE;
 }
 
 
