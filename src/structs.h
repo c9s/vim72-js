@@ -1526,6 +1526,10 @@ struct file_buffer
     void	*b_ruby_ref;
 #endif
 
+#ifdef FEAT_JS
+    void	*b_js_ref;
+#endif
+
 #ifdef FEAT_SYN_HL
     hashtab_T	b_keywtab;		/* syntax keywords hash table */
     hashtab_T	b_keywtab_ic;		/* idem, ignore case */
