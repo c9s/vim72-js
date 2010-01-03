@@ -26,7 +26,7 @@ message( i );
 ok( i , 'buf_cnt' );
 ok( buf_cnt() , 'buf_cnt');
 
-var b = buf_nr_new(1);
+var b = buf_nr(1);
 ok( b , 'buf_nr' );
 
 message( { a: 123 } );
@@ -38,7 +38,7 @@ message( b.number() );
 message( b.ffname() );
 message( b.sfname() );
 message( b.fname() );
-message( b.getline(2) );
+message( b.line(2) );
 
 //ok( buf_ffname( b ) );
 //message( buf_number( b ) );
