@@ -40,20 +40,13 @@ message( b.sfname() );
 message( b.fname() );
 message( b.line(2) );
 message( b.next() );
-message( b.next().fname() );
+if ( b.next() )
+    message( b.next().fname() );
 message( b.prev() );
-
-//ok( buf_ffname( b ) );
-//message( buf_number( b ) );
-//message( buf_ffname(b) );
-
-//is( buf_ffname(b) , '/Users/c9s/git-working/vim7/src/test.js' , 'buf_ffname: ' + buf_ffname(b)  );
+message( b.lines(1,10) );
 
 
-/* 
-if( name ) 
-    message( name );
-else
-    message( 'buf_ffname not ok' );
-
-    */
+var lines = b.lines(1,10);
+for ( i in lines ) {
+    message( i + ":" + lines[i] );
+}
