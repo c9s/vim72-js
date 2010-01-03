@@ -19,7 +19,7 @@
 #include "jsapi.h"
 
 #define js_runtime_memory 8L
-#define INSTANCE_BUFFER(obj)   JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
+#define INSTANCE_BUFFER(cx,obj)   JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
 
 static JSClass buffer_class;
 static JSFunctionSpec js_global_functions[]; 
@@ -175,7 +175,7 @@ js_buffer_number( cx , obj , argc , argv , rval )
 {
     int fnum;
     //buf_T *buf = JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
-    buf_T *buf = INSTANCE_BUFFER( obj );
+    buf_T *buf = INSTANCE_BUFFER(cx,obj);
     fnum = buf->b_fnum;
     *rval = INT_TO_JSVAL( fnum );
     return JS_TRUE;
@@ -190,7 +190,7 @@ js_buffer_window_number( cx , obj , argc , argv , rval )
     jsval	*rval;
 {
     int wnum;
-    buf_T *buf = INSTANCE_BUFFER( obj );
+    buf_T *buf = INSTANCE_BUFFER(cx,obj);
     wnum = buf->b_nwindows;
     *rval = INT_TO_JSVAL( wnum );
     return JS_TRUE;
@@ -208,7 +208,7 @@ js_buffer_fname( cx , obj , argc , argv , rval )
     JSString *str;
 
     //buf_T *buf = JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
-    buf_T *buf = INSTANCE_BUFFER( obj );
+    buf_T *buf = INSTANCE_BUFFER(cx,obj);
     fname = strdup( (char *) buf->b_fname );
     str = JS_NewString( cx , fname , strlen( fname ) );
     *rval = STRING_TO_JSVAL( str );
@@ -228,7 +228,7 @@ js_buffer_sfname( cx , obj , argc , argv , rval )
     JSString *str;
 
     //buf_T *buf = JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
-    buf_T *buf = INSTANCE_BUFFER( obj );
+    buf_T *buf = INSTANCE_BUFFER(cx,obj);
     sfname = strdup( (char *) buf->b_sfname );
     str = JS_NewString( cx , sfname , strlen( sfname ) );
     *rval = STRING_TO_JSVAL( str );
@@ -249,7 +249,7 @@ js_buffer_line( cx , obj , argc , argv , rval )
     char * jsstr;
     char_u* line;
     int linenr = JSVAL_TO_INT( argv[0] );
-    buf_T *buf = INSTANCE_BUFFER( obj );
+    buf_T *buf = INSTANCE_BUFFER(cx,obj);
 
     line = ml_get_buf( buf , (linenr_T)linenr , FALSE );
 
@@ -275,7 +275,7 @@ js_buffer_ffname( cx , obj , argc , argv , rval )
     JSString *str;
 
     //buf_T *buf = JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
-    buf_T *buf = INSTANCE_BUFFER( obj );
+    buf_T *buf = INSTANCE_BUFFER(cx,obj);
     ffname = strdup( (char *) buf->b_ffname );
     str = JS_NewString( cx , ffname , strlen( ffname ) );
     *rval = STRING_TO_JSVAL( str );
