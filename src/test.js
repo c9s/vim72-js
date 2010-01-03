@@ -33,10 +33,10 @@ message( { a: 123 } );
 message( "String" );
 message( function() {  return 123;   } );
 message( b );
-message( b['test'] );
 message( b.number() );
 message( b.ffname() );
 message( b.sfname() );
+/*
 message( b.fname() );
 message( b.line(2) );
 message( b.next() );
@@ -50,3 +50,5 @@ var lines = b.lines(1,10);
 for ( i in lines ) {
     message( i + ":" + lines[i] );
 }
+
+*/
