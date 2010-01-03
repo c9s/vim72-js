@@ -1,0 +1,57 @@
+*if_js.txt*  For Vim version 7.2.  Last change: 2009 Jun 24
+
+
+		  VIM REFERENCE MANUAL    by Yo-An Lin
+
+
+The JavaScript Interface to Vim				*if_js* *js*
+
+1. Commands				|js-commands|
+2. Examples				|js-examples|
+3. The Vim access procedures		|js-vim|
+
+{Vi does not have any of these commands}
+
+The js interface is available only if Vim was compiled with the
+|+js| feature.
+
+==============================================================================
+1. Commands						*js-commands*
+
+							*:jsfile* *:jsf*
+:jsfile {file}	        Execute the JavaScript in {file}.  {not in Vi}
+
+==============================================================================
+2. Examples						*js-examples*
+>
+    message( { a: 123 } );
+    message( "String" );
+    message( function() {  return 123;   } );
+
+    var b = buf_nr(1);
+
+    message( b );
+    message( b.number() );
+    message( b.ffname() );
+    message( b.sfname() );
+    /*
+    message( b.fname() );
+    message( b.line(2) );
+    message( b.next() );
+    if ( b.next() )
+        message( b.next().fname() );
+    message( b.prev() );
+    message( b.lines(1,10) );
+
+
+    var lines = b.lines(1,10);
+    for ( i in lines ) {
+        message( i + ":" + lines[i] );
+    }
+<
+==============================================================================
+3. VIM Functions					*js-vim*
+
+
+======================================================================
+  vim:tw=78:ts=8:sts=4:ft=help:norl:
