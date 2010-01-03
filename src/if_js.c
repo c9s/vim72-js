@@ -99,7 +99,7 @@ js_system(cx, obj, argc, argv, rval)
     jsval	*argv; 
     jsval	*rval;
 {
-    char *cmd;
+    const char *cmd;
     int rc;
 
     if (!JS_ConvertArguments(cx, argc, argv, "s", &cmd))
@@ -255,20 +255,16 @@ js_vim_message( cx , obj , argc , argv , rval )
     jsval	*argv; 
     jsval	*rval;
 {
-
-    char *message;
-    char *p;
-
+    char *message, *p , *buff;
     if (!JS_ConvertArguments(cx, argc, argv, "s", &message))
 	return JS_FALSE;
 
-    p = strchr(message, '\n');
+    buff = strdup(message);
+    p = strchr(buff, '\n');
     if (p)
 	*p = '\0';
-    MSG(message);
-
+    MSG(buff);
     *rval = JSVAL_VOID;
-
     return JS_TRUE;
 }
 
@@ -306,13 +302,11 @@ ex_jsfile(eap)
     int compileOnly = 0;
     JSScript *script = JS_CompileFile( js_env->cx, js_env->global, filename);
 
-    /*
     if (script) {
 	if (!compileOnly)
 	    (void) JS_ExecuteScript( js_env->cx, js_env->global, script, NULL);
 	JS_DestroyScript( js_env->cx, script);
     }
-    */
 }
 
     void
