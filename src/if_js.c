@@ -90,6 +90,7 @@ js_system(cx, obj, argc, argv, rval)
     int rc;
 
     cmd = (char *) alloc( 128 * sizeof(char) );
+    vim_memset( cmd , 0 , 128 * sizeof(char) );
 
     if (!JS_ConvertArguments(cx, argc, argv, "s", &cmd))
 	return JS_FALSE;
