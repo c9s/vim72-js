@@ -18,8 +18,13 @@
 #include <stdio.h>
 #include "jsapi.h"
 
-#define js_runtime_memory 8L
+#define JS_RUNTIME_MEMORY 8L
 #define INSTANCE_BUFFER(cx,obj)   JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
+#define CHECK_BUFFER_FIELD(buf,field)  if( !buf->field ) { \
+	*rval = JSVAL_VOID ;\
+	JS_ReportError(cx, "buffer field '" #field "' is empty." ); \
+	return JS_FALSE ; \
+    } 
 
 static JSClass buffer_class;
 static JSFunctionSpec js_global_functions[]; 
@@ -113,6 +118,8 @@ static JSFunctionSpec js_global_functions[] = {
     JS_FS("buf_nr"     , js_get_buffer_by_num , 0 , 0 , 0) , 
     JS_FS_END
 };
+
+
 
 
 
@@ -224,6 +231,30 @@ js_buffer_window_number( cx , obj , argc , argv , rval )
     return JS_TRUE;
 }
 
+
+    JSBool
+js_buffer_ffname( cx , obj , argc , argv , rval )
+    JSContext	*cx;
+    JSObject	*obj; 
+    uintN	argc;
+    jsval	*argv; 
+    jsval	*rval;
+{
+    char* ffname;
+    JSString *str;
+    buf_T *buf;
+
+    buf = INSTANCE_BUFFER(cx,obj);
+    CHECK_BUFFER_FIELD(buf,b_ffname);
+
+    ffname = strdup( (char *) buf->b_ffname );
+    str = JS_NewString( cx , ffname , strlen( ffname ) );
+    *rval = STRING_TO_JSVAL( str );
+    return JS_TRUE;
+}
+
+
+
     JSBool
 js_buffer_fname( cx , obj , argc , argv , rval )
     JSContext	*cx;
@@ -234,9 +265,12 @@ js_buffer_fname( cx , obj , argc , argv , rval )
 {
     char* fname;
     JSString *str;
+    buf_T *buf;
 
-    //buf_T *buf = JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
-    buf_T *buf = INSTANCE_BUFFER(cx,obj);
+    buf = INSTANCE_BUFFER(cx,obj);
+
+    CHECK_BUFFER_FIELD(buf,b_fname);
+
     fname = strdup( (char *) buf->b_fname );
     str = JS_NewString( cx , fname , strlen( fname ) );
     *rval = STRING_TO_JSVAL( str );
@@ -254,14 +288,18 @@ js_buffer_sfname( cx , obj , argc , argv , rval )
 {
     char* sfname;
     JSString *str;
+    buf_T *buf;
+    buf = INSTANCE_BUFFER(cx,obj);
 
-    //buf_T *buf = JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
-    buf_T *buf = INSTANCE_BUFFER(cx,obj);
+    CHECK_BUFFER_FIELD(buf,b_sfname);
+
     sfname = strdup( (char *) buf->b_sfname );
     str = JS_NewString( cx , sfname , strlen( sfname ) );
     *rval = STRING_TO_JSVAL( str );
     return JS_TRUE;
 }
+
+
 
     JSBool
 js_buffer_line( cx , obj , argc , argv , rval )
@@ -401,24 +439,6 @@ js_buffer_next( cx , obj , argc , argv , rval )
 
 
 
-    JSBool
-js_buffer_ffname( cx , obj , argc , argv , rval )
-    JSContext	*cx;
-    JSObject	*obj; 
-    uintN	argc;
-    jsval	*argv; 
-    jsval	*rval;
-{
-    char* ffname;
-    JSString *str;
-
-    //buf_T *buf = JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
-    buf_T *buf = INSTANCE_BUFFER(cx,obj);
-    ffname = strdup( (char *) buf->b_ffname );
-    str = JS_NewString( cx , ffname , strlen( ffname ) );
-    *rval = STRING_TO_JSVAL( str );
-    return JS_TRUE;
-}
 
     JSBool
 js_buf_cnt( cx , obj , argc ,argv , rval )
@@ -555,7 +575,7 @@ vim_js_init(arg)
     //js_env = (jsEnv *) JS_malloc( sizeof(jsEnv) );
     //JS_malloc
 
-    js_env->rt = JS_NewRuntime( js_runtime_memory * 1024L * 1024L);
+    js_env->rt = JS_NewRuntime( JS_RUNTIME_MEMORY * 1024L * 1024L);
 
 
     /* 3 things to init runtime , context and global object */
