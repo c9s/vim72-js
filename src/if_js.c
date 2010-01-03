@@ -20,6 +20,23 @@
 
 #define js_runtime_memory 8L
 
+
+static JSClass buffer_class;
+static JSFunctionSpec js_global_functions[]; 
+
+
+
+/* JS API Functions */
+void report_error( JSContext *cx , const char *message , JSErrorReport *report );
+
+/* Exported Functions */
+JSBool js_system(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+JSBool js_vim_message(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+JSBool js_buf_number(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+JSBool js_buf_ffname(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+JSBool js_buf_cnt(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+JSBool js_get_buffer_by_num(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+
 /* JS global variables. */
 typedef struct jsEnv
 {
@@ -66,6 +83,27 @@ static JSClass global_class = {
     JS_FinalizeStub,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
+
+/*
+ * Export C functions to javascript environment. 
+ * 
+ **/
+static JSFunctionSpec js_global_functions[] = {
+    JS_FS("system", js_system, 1, 0, 0),
+
+    /* vim function interface here  */
+    JS_FS("alert"      , js_vim_message       , 1 , 0 , 0) , 
+    JS_FS("message"    , js_vim_message       , 1 , 0 , 0) , 
+    JS_FS("buf_cnt"    , js_buf_cnt           , 0 , 0 , 0) , 
+    JS_FS("buf_nr"     , js_get_buffer_by_num , 0 , 0 , 0) , 
+    JS_FS("buf_ffname" , js_buf_ffname        , 0 , 0 , 0) , 
+    JS_FS("buf_number" , js_buf_number	      , 0 , 0 , 0) ,
+    JS_FS_END
+};
+
+
+
+
 
 /* The javascript error reporter callback. */
     void
@@ -255,7 +293,7 @@ js_vim_message( cx , obj , argc , argv , rval )
     jsval	*argv; 
     jsval	*rval;
 {
-    char *message, *p , *buff;
+    char *message, *p, *buff;
     if (!JS_ConvertArguments(cx, argc, argv, "s", &message))
 	return JS_FALSE;
 
@@ -269,22 +307,6 @@ js_vim_message( cx , obj , argc , argv , rval )
 }
 
 
-/*
- * Export C functions to javascript environment. 
- * 
- **/
-static JSFunctionSpec js_global_functions[] = {
-    JS_FS("system", js_system, 1, 0, 0),
-
-    /* vim function interface here  */
-    JS_FS("alert"      , js_vim_message       , 1 , 0 , 0) , 
-    JS_FS("message"    , js_vim_message       , 1 , 0 , 0) , 
-    JS_FS("buf_cnt"    , js_buf_cnt           , 0 , 0 , 0) , 
-    JS_FS("buf_nr"     , js_get_buffer_by_num , 0 , 0 , 0) , 
-    JS_FS("buf_ffname" , js_buf_ffname        , 0 , 0 , 0) , 
-    JS_FS("buf_number" , js_buf_number	      , 0 , 0 , 0) ,
-    JS_FS_END
-};
 
 
 /*
