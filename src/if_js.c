@@ -37,6 +37,22 @@ typedef struct
 jsEnv *js_env = NULL;
 
 /* The class of the global object. */
+
+/* Buffer Class */
+static JSClass buffer_class = {
+    "Buffer",
+    JSCLASS_NEW_RESOLVE | JSCLASS_NEW_ENUMERATE | JSCLASS_HAS_PRIVATE,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_EnumerateStub,
+    JS_ResolveStub,
+    JS_ConvertStub,
+    JS_FinalizeStub,
+    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
 static JSClass global_class = {
     "global",
     JSCLASS_GLOBAL_FLAGS,
@@ -50,8 +66,6 @@ static JSClass global_class = {
     JS_FinalizeStub,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
-
-
 
 /* The javascript error reporter callback. */
     void
@@ -74,7 +88,6 @@ report_error(cx, message, report)
 	*p = '\0';
     MSG(error_msg);
 
-    vim_free( error_msg );
     return;
 }
 
@@ -151,6 +164,7 @@ js_buf_ffname( cx , obj , argc , argv , rval )
     str = JS_NewString( cx , buf_name , strlen( buf_name ) );
 
     *rval = STRING_TO_JSVAL( str );
+
     return JS_TRUE;
 }
 
@@ -292,11 +306,13 @@ ex_jsfile(eap)
     int compileOnly = 0;
     JSScript *script = JS_CompileFile( js_env->cx, js_env->global, filename);
 
+    /*
     if (script) {
 	if (!compileOnly)
 	    (void) JS_ExecuteScript( js_env->cx, js_env->global, script, NULL);
 	JS_DestroyScript( js_env->cx, script);
     }
+    */
 }
 
     void
