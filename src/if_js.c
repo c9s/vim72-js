@@ -19,12 +19,10 @@
 #include "jsapi.h"
 
 #define js_runtime_memory 8L
-
+#define JSVAL_TO_BUFFER(x)  (jsBufferObject *)( JSVAL_TO_OBJECT(x))
 
 static JSClass buffer_class;
 static JSFunctionSpec js_global_functions[]; 
-
-
 
 /* JS API Functions */
 void report_error( JSContext *cx , const char *message , JSErrorReport *report );
@@ -167,7 +165,7 @@ js_buf_number( cx , obj , argc , argv , rval )
     jsBufferObject * bufobj;
     jsint fnum;
 
-    bufobj = (jsBufferObject *) JSVAL_TO_OBJECT( argv[0] );
+    bufobj = JSVAL_TO_BUFFER( argv[0] );
 
     if( ! bufobj || ! bufobj->buf || ! bufobj->buf->b_fnum ) 
 	return JS_FALSE;
@@ -190,7 +188,7 @@ js_buf_ffname( cx , obj , argc , argv , rval )
     JSString * str;
     jsBufferObject * bufobj;
 
-    bufobj = (jsBufferObject *) JSVAL_TO_OBJECT( argv[0] );
+    bufobj = JSVAL_TO_BUFFER( argv[0] );
 
     if( ! bufobj || ! bufobj->buf || ! bufobj->buf->b_ffname ) 
 	return JS_FALSE;
