@@ -32,7 +32,7 @@ JSBool js_system(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval
 JSBool js_vim_message(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buf_number(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_number(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
-JSBool js_buffer_getline(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+JSBool js_buffer_line(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_ffname(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_sfname(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_fname(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
@@ -80,7 +80,7 @@ static JSFunctionSpec buffer_methods[] = {
     JS_FS("ffname", js_buffer_ffname, 1, 0, 0),
     JS_FS("sfname", js_buffer_sfname, 1, 0, 0),
     JS_FS("fname", js_buffer_fname, 1, 0, 0),
-    JS_FS("getline", js_buffer_getline, 1, 0, 0),
+    JS_FS("line", js_buffer_line, 1, 0, 0),
     JS_FS_END
 };
 
@@ -245,7 +245,7 @@ js_buffer_sfname( cx , obj , argc , argv , rval )
 
 
     JSBool
-js_buffer_getline( cx , obj , argc , argv , rval )
+js_buffer_line( cx , obj , argc , argv , rval )
     JSContext	*cx;
     JSObject	*obj; 
     uintN	argc;
