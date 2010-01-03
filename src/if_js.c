@@ -22,7 +22,7 @@
 #define INSTANCE_BUFFER(cx,obj)   JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
 #define CHECK_BUFFER_FIELD(buf,field)  if( !buf->field ) { \
 	*rval = JSVAL_VOID ;\
-	JS_ReportError(cx, "buffer field '" #field "' is empty." ); \
+	JS_ReportError(cx, "buffer field '" #field "' is empty. %s:%d", __FILE__ , __LINE__ ); \
 	return JS_FALSE ; \
     } 
 
@@ -263,7 +263,7 @@ js_buffer_fname( cx , obj , argc , argv , rval )
     jsval	*argv; 
     jsval	*rval;
 {
-    char* fname;
+    char *fname;
     JSString *str;
     buf_T *buf;
 
