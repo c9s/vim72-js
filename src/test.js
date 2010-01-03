@@ -39,6 +39,9 @@ message( b.ffname() );
 message( b.sfname() );
 message( b.fname() );
 message( b.line(2) );
+message( b.next() );
+message( b.next().fname() );
+message( b.prev() );
 
 //ok( buf_ffname( b ) );
 //message( buf_number( b ) );
