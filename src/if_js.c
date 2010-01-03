@@ -86,7 +86,7 @@ js_system(cx, obj, argc, argv, rval)
     jsval	*argv; 
     jsval	*rval;
 {
-    const char *cmd;
+    char *cmd;
     int rc;
 
     cmd = (char *) alloc( 128 * sizeof(char) );
