@@ -193,14 +193,13 @@ js_buf_ffname( cx , obj , argc , argv , rval )
     if( ! bufobj || ! bufobj->buf || ! bufobj->buf->b_ffname ) 
 	return JS_FALSE;
 
-    buf_name = (char *) bufobj->buf->b_ffname;
+    buf_name = strdup((char *) bufobj->buf->b_ffname);
 
     //XXX: unicode string
     //JSString *str = JS_NewUCString( js_env->cx , buf_name , strlen( buf_name ) );
     str = JS_NewString( cx , buf_name , strlen( buf_name ) );
 
     *rval = STRING_TO_JSVAL( str );
-
     return JS_TRUE;
 }
 
