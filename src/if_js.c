@@ -39,7 +39,7 @@ JSBool js_buffer_fname(JSContext * cx, JSObject * obj, uintN argc, jsval * argv,
 JSBool js_buffer_window_number(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buf_cnt(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_get_buffer_by_num(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
-JSBool js_get_buffer_by_num_new(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+
 
 /* JS global variables. */
 typedef struct jsEnv
@@ -48,12 +48,6 @@ typedef struct jsEnv
     JSContext *cx;
     JSObject  *global;
 } jsEnv;
-
-typedef struct
-{
-    JSObject	    *jso;
-    buf_T	    *buf;
-} jsBufferObject;
 
 jsEnv *js_env = NULL;
 
@@ -110,7 +104,6 @@ static JSFunctionSpec js_global_functions[] = {
     JS_FS("message"    , js_vim_message       , 1 , 0 , 0) , 
     JS_FS("buf_cnt"    , js_buf_cnt           , 0 , 0 , 0) , 
     JS_FS("buf_nr"     , js_get_buffer_by_num , 0 , 0 , 0) , 
-    JS_FS("buf_nr_new"  , js_get_buffer_by_num_new , 0 , 0 , 0) , 
     JS_FS_END
 };
 
@@ -306,29 +299,6 @@ js_buf_cnt( cx , obj , argc ,argv , rval )
     return JS_NewNumberValue(cx, n , rval);
 }
 
-    static jsBufferObject *
-js_new_buffer_object( cx , buf )
-    JSContext *cx;
-    buf_T     *buf;
-
-{
-    jsBufferObject *self = (jsBufferObject *) alloc( sizeof( jsBufferObject ) );
-    vim_memset(self, 0, sizeof( jsBufferObject ));
-    self->jso = JS_NewObject( cx, NULL, NULL, NULL);
-    self->buf = buf;
-    return self;
-}
-
-    void
-js_free_buffer_object( cx , buf ) 
-    JSContext *cx;
-    buf_T     *buf;
-{
-
-
-
-}
-
 JSObject *
 js_buffer_new( cx , buf ) 
     JSContext * cx;
@@ -343,9 +313,14 @@ js_buffer_new( cx , buf )
     return jsobj;
 }
 
-
+/* XXX: from buffer class constructor
+ *
+ * var buf = Buffer.find( 10 );
+ * var buflist = Buffer.list();
+ *
+ */
     JSBool
-js_get_buffer_by_num_new( cx , obj , argc ,argv , rval )
+js_get_buffer_by_num( cx , obj , argc ,argv , rval )
     JSContext	*cx;
     JSObject	*obj; 
     uintN	argc;
@@ -371,55 +346,6 @@ js_get_buffer_by_num_new( cx , obj , argc ,argv , rval )
 
 	    *rval = OBJECT_TO_JSVAL( jsobj );
 	    return JS_TRUE;
-	}
-    }
-
-    *rval = JSVAL_VOID;
-    JS_ReportError(cx, "Can not found buffer %d", fnum);
-    return JS_FALSE;
-}
-
-
-/* XXX: from buffer class constructor
- *
- * var buf = Buffer.find( 10 );
- * var buflist = Buffer.list();
- *
- */
-    JSBool
-js_get_buffer_by_num( cx , obj , argc ,argv , rval )
-    JSContext	*cx;
-    JSObject	*obj; 
-    uintN	argc;
-    jsval	*argv; 
-    jsval	*rval;
-{
-    int	    fnum;
-    buf_T   *buf;
-    jsBufferObject *bufobj;
-
-
-    // prototype is NULL
-    JSObject * jsbuf = JS_DefineObject(cx, obj, "Buffer", &buffer_class, NULL, JSPROP_ENUMERATE);
-    JS_DefineFunctions(cx , jsbuf, buffer_methods);
-
-
-    if (!JS_ConvertArguments(cx, argc, argv, "/j", &fnum)) {
-	JS_ReportError(cx, "Can't convert buffer number");
-	return JS_FALSE;
-    }
-
-
-    for (buf = firstbuf; buf; buf = buf->b_next) {
-	if (buf->b_fnum == fnum) {
-	    bufobj = js_new_buffer_object(cx,buf);
-	    if ( bufobj->jso == NULL) {
-		return JS_FALSE;
-	    }
-	    else {
-		*rval = OBJECT_TO_JSVAL( (JSObject *) bufobj );
-		return JS_TRUE;
-	    }
 	}
     }
 
