@@ -89,9 +89,6 @@ js_system(cx, obj, argc, argv, rval)
     char *cmd;
     int rc;
 
-    cmd = (char *) alloc( 128 * sizeof(char) );
-    vim_memset( cmd , 0 , 128 * sizeof(char) );
-
     if (!JS_ConvertArguments(cx, argc, argv, "s", &cmd))
 	return JS_FALSE;
 
@@ -103,9 +100,32 @@ js_system(cx, obj, argc, argv, rval)
 	return JS_FALSE;
     }
     *rval = JSVAL_VOID;		/* return undefined */
+
     return JS_TRUE;
 }
 
+
+    JSBool
+js_buf_number( cx , obj , argc , argv , rval )
+    JSContext	*cx;
+    JSObject	*obj; 
+    uintN	argc;
+    jsval	*argv; 
+    jsval	*rval;
+{
+    jsBufferObject * bufobj;
+    jsint fnum;
+
+    bufobj = (jsBufferObject *) JSVAL_TO_OBJECT( argv[0] );
+
+    if( ! bufobj || ! bufobj->buf || ! bufobj->buf->b_fnum ) 
+	return JS_FALSE;
+
+    fnum = bufobj->buf->b_fnum;
+
+    *rval = INT_TO_JSVAL( fnum );
+    return JS_TRUE;
+}
 
     JSBool
 js_buf_ffname( cx , obj , argc , argv , rval )
@@ -115,23 +135,20 @@ js_buf_ffname( cx , obj , argc , argv , rval )
     jsval	*argv; 
     jsval	*rval;
 {
+    char *buf_name;
+    JSString * str;
+    jsBufferObject * bufobj;
 
-    JSObject * jsobj = JSVAL_TO_OBJECT( argv[0] );
+    bufobj = (jsBufferObject *) JSVAL_TO_OBJECT( argv[0] );
 
-    //if (!JS_ValueToObject(cx, argv[0], &jsobj ))
-            //return JS_FALSE;
-
-    //jsBufferObject *bufobj = (jsBufferObject *) JSVAL_TO_OBJECT( *argv );
-    jsBufferObject *bufobj = (jsBufferObject *) jsobj;
-
-    if( ! bufobj ) 
+    if( ! bufobj || ! bufobj->buf || ! bufobj->buf->b_ffname ) 
 	return JS_FALSE;
 
-    char *buf_name = (char *) bufobj->buf->b_ffname;
+    buf_name = (char *) bufobj->buf->b_ffname;
 
     //XXX: unicode string
     //JSString *str = JS_NewUCString( js_env->cx , buf_name , strlen( buf_name ) );
-    JSString *str = JS_NewString( cx , buf_name , strlen( buf_name ) );
+    str = JS_NewString( cx , buf_name , strlen( buf_name ) );
 
     *rval = STRING_TO_JSVAL( str );
     return JS_TRUE;
@@ -186,8 +203,6 @@ js_get_buffer_by_num( cx , obj , argc ,argv , rval )
     jsval	*argv; 
     jsval	*rval;
 {
-
-
     int	    fnum;
     buf_T   *buf;
     jsBufferObject *bufobj;
@@ -211,6 +226,7 @@ js_get_buffer_by_num( cx , obj , argc ,argv , rval )
 	}
     }
 
+    *rval = JSVAL_VOID;
     JS_ReportError(cx, "Can not found buffer %d", fnum);
     return JS_FALSE;
 }
@@ -226,7 +242,7 @@ js_vim_message( cx , obj , argc , argv , rval )
     jsval	*rval;
 {
 
-    const char *message;
+    char *message;
     char *p;
 
     if (!JS_ConvertArguments(cx, argc, argv, "s", &message))
@@ -238,6 +254,7 @@ js_vim_message( cx , obj , argc , argv , rval )
     MSG(message);
 
     *rval = JSVAL_VOID;
+
     return JS_TRUE;
 }
 
@@ -255,6 +272,7 @@ static JSFunctionSpec js_global_functions[] = {
     JS_FS("buf_cnt"    , js_buf_cnt           , 0 , 0 , 0) , 
     JS_FS("buf_nr"     , js_get_buffer_by_num , 0 , 0 , 0) , 
     JS_FS("buf_ffname" , js_buf_ffname        , 0 , 0 , 0) , 
+    JS_FS("buf_number" , js_buf_number	      , 0 , 0 , 0) ,
     JS_FS_END
 };
 
