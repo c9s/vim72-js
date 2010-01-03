@@ -462,6 +462,7 @@ js_get_buffer_by_num( cx , obj , argc ,argv , rval )
 
     if (!JS_ConvertArguments(cx, argc, argv, "/j", &fnum)) {
 	JS_ReportError(cx, "Can't convert buffer number");
+	*rval = JSVAL_VOID;
 	return JS_FALSE;
     }
 
