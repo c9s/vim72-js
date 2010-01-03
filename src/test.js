@@ -26,11 +26,23 @@ message( i );
 ok( i , 'buf_cnt' );
 ok( buf_cnt() , 'buf_cnt');
 
-var b = buf_nr(1);
+var b = buf_nr_new(1);
 ok( b , 'buf_nr' );
-ok( buf_ffname(b) );
 
-message( buf_number( b ) );
+message( { a: 123 } );
+message( "String" );
+message( function() {  return 123;   } );
+message( b );
+message( b['test'] );
+message( b.number() );
+message( b.ffname() );
+message( b.sfname() );
+message( b.fname() );
+message( b.getline(2) );
+
+//ok( buf_ffname( b ) );
+//message( buf_number( b ) );
+//message( buf_ffname(b) );
 
 //is( buf_ffname(b) , '/Users/c9s/git-working/vim7/src/test.js' , 'buf_ffname: ' + buf_ffname(b)  );
 
