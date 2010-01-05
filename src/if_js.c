@@ -178,6 +178,8 @@ static JSFunctionSpec js_global_functions[] = {
     JS_FS_END
 };
 
+
+
 /* The javascript error reporter callback. */
     void
 report_error(cx, message, report)
