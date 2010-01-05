@@ -10,6 +10,25 @@
  *  struct name          : js_[A-Z][a-z]+
  *  js export functions  : js_[a-z]+
  *  non-export functions : [a-z]+
+ 
+    synopsis: 
+
+	var buffer = vim.buffer.find( 2 );
+
+	buffer.set('nu').set('hls');   // setlocal nu hls
+
+	vim.set('nu');    // set nu
+
+	var lines = vim.buffer.find( '/path/to/file' ).lines( 1, 10);
+
+	var win = vim.window.find( .. );
+	var tab = vim.tab.find( ... );
+
+	vim.tab.new( ...  ).edit_buffer( buf );
+
+	vim.command( 'vsplit' );
+
+	...
  */
 
 #include "vim.h"
@@ -19,13 +38,18 @@
 #include "jsapi.h"
 
 #define JS_RUNTIME_MEMORY 8L
+
 #define INSTANCE_BUFFER(cx,obj)   JS_GetInstancePrivate(cx, obj, &buffer_class, NULL);
+
 #define CHECK_BUFFER_FIELD(buf,field)  if( !buf->field ) { \
 	*rval = JSVAL_VOID ;\
 	JS_ReportError(cx, "buffer field '" #field "' is empty. %s:%d", __FILE__ , __LINE__ ); \
 	return JS_FALSE ; \
     } 
 
+static JSClass vim_class;
+static JSClass window_class;
+static JSClass tab_class;
 static JSClass buffer_class;
 static JSFunctionSpec js_global_functions[]; 
 
@@ -37,7 +61,11 @@ JSObject * js_buffer_new( JSContext * cx, buf_T * buf);
 
 /* Interface Functions */
 JSBool js_system(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+
+/* Vim Interface Functions */
 JSBool js_vim_message(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+
+/* Buffer interface functions */
 JSBool js_buffer_number(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_line(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_lines(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
@@ -49,6 +77,10 @@ JSBool js_buf_cnt(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsva
 JSBool js_get_buffer_by_num(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_next(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
 JSBool js_buffer_prev(JSContext * cx, JSObject * obj, uintN argc, jsval * argv, jsval * rval);
+
+/* Window interface functions */
+
+/* Tab interface functions */
 
 /* JS global variables. */
 typedef struct jsEnv
@@ -90,6 +122,34 @@ static JSFunctionSpec buffer_methods[] = {
     JS_FS_END
 };
 
+
+/* global vim class */
+// XXX: define this object when init.
+static JSClass vim_class = {
+    "vim",
+    JSCLASS_GLOBAL_FLAGS,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_PropertyStub,
+    JS_EnumerateStub,
+    JS_ResolveStub,
+    JS_ConvertStub,
+    JS_FinalizeStub,
+    JSCLASS_NO_OPTIONAL_MEMBERS
+};
+
+/* global vim class functions */
+static JSFunctionSpec vim_class_functions[] = {
+    // JS_FS("system", js_system, 1, 0, 0),
+    // JS_FS("alert"      , js_vim_message       , 1 , 0 , 0) , 
+    // JS_FS("message"    , js_vim_message       , 1 , 0 , 0) , 
+    // JS_FS("buf_cnt"    , js_buf_cnt           , 0 , 0 , 0) , 
+    // JS_FS("buf_nr"     , js_get_buffer_by_num , 0 , 0 , 0) , 
+    JS_FS_END
+};
+
+/* global class */
 static JSClass global_class = {
     "global",
     JSCLASS_GLOBAL_FLAGS,
@@ -104,26 +164,19 @@ static JSClass global_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-/*
- * Export C functions to javascript environment. 
- * 
- **/
+/* global functions */
 static JSFunctionSpec js_global_functions[] = {
     JS_FS("system", js_system, 1, 0, 0),
 
     /* vim function interface here  */
     JS_FS("alert"      , js_vim_message       , 1 , 0 , 0) , 
     JS_FS("message"    , js_vim_message       , 1 , 0 , 0) , 
+
+// XXX: mv buf_cnt , buf_nr to vim.buffer.count()  and vim.buffer.find( [num] );
     JS_FS("buf_cnt"    , js_buf_cnt           , 0 , 0 , 0) , 
     JS_FS("buf_nr"     , js_get_buffer_by_num , 0 , 0 , 0) , 
     JS_FS_END
 };
-
-
-
-
-
-
 
 /* The javascript error reporter callback. */
     void
